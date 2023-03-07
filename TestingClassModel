@@ -27,7 +27,7 @@ y = df['Category']
 tokenizer = RegexpTokenizer(r'\w+')
 stop_words = set(stopwords.words("arabic"))
 
-# Useing NLTK for the getting the required features (Stemming & POS)
+# Useing NLTK for getting the required features (Stemming & POS)
 # filterd_txt=[[word  for word in tokenizer.tokenize(sen) if word.casefold() not in stop_words]for sen in text]
 stemmed_txt = [[PorterStemmer().stem(word) for word in sen] for sen in text]
 # lem_txt=[[WordNetLemmatizer().lemmatize(word) for word in sen ]for sen in stemmed_txt]
