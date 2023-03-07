@@ -1,0 +1,118 @@
+import pandas as pd
+import nltk
+from nltk.tokenize import RegexpTokenizer
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn import svm
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier
+from nltk.stem.wordnet import WordNetLemmatizer
+import stanza
+
+nltk.download('wordnet')
+nltk.download('stopwords')
+nltk.download('punkt')
+
+df = pd.read_csv("/Users/ferasawaysheh/Documents/NLP contest /trainRumorWithoutPre.csv")
+text = df['text']
+y = df['Category']
+
+tokenizer = RegexpTokenizer(r'\w+')
+stop_words = set(stopwords.words("arabic"))
+
+# Useing NLTK for the getting the required features (Stemming & POS)
+# filterd_txt=[[word  for word in tokenizer.tokenize(sen) if word.casefold() not in stop_words]for sen in text]
+stemmed_txt = [[PorterStemmer().stem(word) for word in sen] for sen in text]
+# lem_txt=[[WordNetLemmatizer().lemmatize(word) for word in sen ]for sen in stemmed_txt]
+y_pos_text=[[y for x,y in sen]for sen in [nltk.pos_tag(sen) for sen in stemmed_txt]]
+
+
+#print(y_pos_text)
+new_txt=[' '.join(map(str,sen)) for sen in stemmed_txt]
+new_pos_txt=[' '.join(map(str,sen)) for sen in y_pos_text]
+#print("POS with NLTK with mapping")
+#print (len(new_pos_txt))
+
+# Useing Stnaza for the getting the required features  (NER & POS)
+'''nlp = stanza.Pipeline(lang='ar', processors='tokenize,mwt,pos', tokenize_pretokenized=True)
+doc = nlp(text.tolist())
+print("text lists")
+print(len(text.tolist()))
+documentSentences = [word.xpos for sent in doc.sentences for word in sent.words]
+new_pos_txt2 = [[y for y in sen] for sen in [documentSentences for sen in text.tolist()]]
+# print(new_pos_txt2)
+print("POS with STANZA without mapping")
+print (len(new_pos_txt2))
+new_pos_txt3=[' '.join(map(str,sen)) for sen in new_pos_txt2]
+print("POS with STANZA with mapping")
+print (len(new_pos_txt3))
+
+nlpNER = stanza.Pipeline(lang='ar', processors='tokenize,ner', tokenize_pretokenized=True)
+docNER = nlpNER(text.tolist())
+documentNERSentences = [ent.type for sent in docNER.sentences for ent in sent.ents]
+newNERtxt = [[y for y in sen] for sen in [documentNERSentences for sen in text.tolist()]]
+newNEWtxt1=[' '.join(map(str,sen)) for sen in newNERtxt]'''
+
+print(text[:120])
+# print(new_txt[:5],'\n')
+# print(new_pos_txt[:5],'\n')
+print(y[:120])
+
+# bag of words using TFIDF vectorization 
+vectorizer = TfidfVectorizer(ngram_range=(1, 1))
+vectorizer1 = CountVectorizer(ngram_range=(1, 1))
+vectorizer2 = CountVectorizer(ngram_range=(2, 2))
+vectorizer3 = CountVectorizer(ngram_range=(3, 3))
+
+# X =vectorizer.fit_transform(new_txt).toarray()
+# X =vectorizer1.fit_transform(new_txt).toarray()
+
+# X =vectorizer.fit_transform(new_pos_txt).toarray()
+X = vectorizer.fit_transform(new_pos_txt).toarray()
+
+# X =vectorizer2.fit_transform(new_pos_txt).toarray()
+# X =vectorizer3.fit_transform(new_pos_txt).toarray()
+
+# Splitting the data for training and testing 
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.30, random_state = 0)
+# metrics.f1_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred))
+svm_clf = svm.LinearSVC(dual=False)
+nb_clf = GaussianNB()
+dt_clf = DecisionTreeClassifier(random_state=0, max_depth=2)
+rf_clf = RandomForestClassifier(max_depth=2, random_state=0)
+et_clf = ExtraTreesClassifier(n_estimators=100, random_state=0)
+
+print(X.shape)
+
+# Building Classification models 
+print("1- Support Vector Machine\n")
+svm_clf.fit(X_train, y_train)
+svm_prd = svm_clf.predict(X_test)
+print(classification_report(svm_prd, y_test))
+
+print("2- Naive Bayes\n")
+nb_clf.fit(X_train, y_train)
+nb_prd = nb_clf.predict(X_test)
+print(classification_report(nb_prd, y_test))
+
+print("3- Decision Tree\n")
+dt_clf.fit(X_train, y_train)
+dt_prd = dt_clf.predict(X_test)
+print(classification_report(dt_prd, y_test))
+
+print("4- Random Forest\n")
+rf_clf.fit(X_train, y_train)
+rf_prd = rf_clf.predict(X_test)
+print(classification_report(rf_prd, y_test))
+
+print("5- Extra Trees \n")
+et_clf.fit(X_train, y_train)
+et_prd = et_clf.predict(X_test)
+print(classification_report(et_prd, y_test))
